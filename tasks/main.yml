@@ -1,0 +1,18 @@
+---
+- name: specify uwsgi plugins in make.conf
+  lineinfile: >
+    dest=/etc/portage/make.conf
+    regexp='^UWSGI_PLUGINS='
+    line='UWSGI_PLUGINS="{{ uwsgi_plugins | join(" ") }}"'
+  tags: packages
+
+- name: install package
+  portage: package=www-servers/uwsgi
+  tags: packages
+  # USE www-servers/uwsgi python -xml -ssl
+
+- name: replace runscript with ours
+  copy: >
+    src=uwsgi.runscript
+    dest=/etc/init.d/uwsgi
+    owner=root group=root mode=755

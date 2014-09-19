@@ -1,0 +1,52 @@
+#!/sbin/runscript
+# Copyright 1999-2014 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+
+: ${name:="uWSGI application ${RC_SVCNAME}"}
+: ${pidfile:=/run/${RC_SVCNAME}/uwsgi.pid}
+: ${user:=nobody}
+: ${group:=$user}
+
+extra_started_commands="reload stats"
+description_stats="Dump uWSGI statistics to log file"
+
+command="/usr/bin/uwsgi"
+command_args="
+    --daemonize ${log_file:-/dev/null --disable-logging}
+    --master
+    --pidfile $pidfile
+    --ini $uwsgi_ini
+    $uwsgi_opts"
+
+start_stop_daemon_args="--quiet --user $user"
+retry="SIGQUIT/20"
+
+required_files="$uwsgi_ini"
+
+
+depend() {
+    need net
+    use nginx postgresql
+}
+
+start_pre() {
+    checkpath -d -m 0755 -o ${user}:${group} "$(dirname $pidfile)"
+}
+
+stop() {
+    ebegin "Stopping $name"
+    start-stop-daemon --stop --signal INT --pidfile "$pidfile"
+    eend $?
+}
+
+reload() {
+    ebegin "Reloading $name"
+    start-stop-daemon --signal HUP --pidfile "$pidfile"
+    eend $?
+}
+
+stats() {
+    ebegin "Dumping statistics for $name to the log file"
+    start-stop-daemon --signal USR1 --pidfile "$pidfile"
+    eend $?
+}
