@@ -9,7 +9,7 @@
 - name: install package
   portage: package=www-servers/uwsgi
   tags: packages
-  # USE www-servers/uwsgi python -xml -ssl
+  # USE www-servers/uwsgi python yaml -xml -ssl
 
 - name: replace runscript with ours
   copy: >

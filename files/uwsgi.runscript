@@ -1,35 +1,52 @@
 #!/sbin/runscript
-# Copyright 1999-2014 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-: ${name:="uWSGI application ${RC_SVCNAME}"}
+# This is custom runscript from https://github.com/jirutka/ansible-role-uwsgi
+
+: ${name:="uWSGI server ${RC_SVCNAME}"}
 : ${pidfile:=/run/${RC_SVCNAME}/uwsgi.pid}
 : ${user:=nobody}
 : ${group:=$user}
 
 extra_started_commands="reload stats"
+description_reload="Gracefully reload all the workers and the master process"
 description_stats="Dump uWSGI statistics to log file"
 
-command="/usr/bin/uwsgi"
+command='/usr/bin/uwsgi'
 command_args="
-    --daemonize ${log_file:-/dev/null --disable-logging}
+    --daemonize ${log_file:-/dev/null}
     --master
     --pidfile $pidfile
-    --ini $uwsgi_ini
     $uwsgi_opts"
 
 start_stop_daemon_args="--quiet --user $user"
-retry="SIGQUIT/20"
-
-required_files="$uwsgi_ini"
+retry='SIGQUIT/20'
 
 
 depend() {
     need net
-    use nginx postgresql
+    before nginx
+    after postgresql
 }
 
 start_pre() {
+    if [[ "$RC_SVCNAME" =~ ^uwsgi($|[.-](.*)) ]]; then
+        suffix="${BASH_REMATCH[1]/[.-]/}"
+        : ${uwsgi_conf:=/etc/uwsgi.d/${suffix:-default}}
+    else
+        : ${uwsgi_conf:=/etc/${RC_SVCNAME}/uwsgi}
+    fi
+
+    if [ -f "${uwsgi_conf%.yml}.yml" ]; then
+        command_args+=" --yaml ${uwsgi_conf%.yml}.yml"
+    elif [ -f "${uwsgi_conf%.ini}.ini" ]; then
+        command_args+=" --ini ${uwsgi_conf%.ini}.ini"
+    else
+        eerror 'No configuration file found!'
+        return 2
+    fi
+
     checkpath -d -m 0755 -o ${user}:${group} "$(dirname $pidfile)"
 }
 
