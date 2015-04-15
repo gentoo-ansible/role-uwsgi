@@ -3,13 +3,5 @@
 uwsgi_plugins:
   - cheaper_busyness
   - corerouter
-  - fastrouter
-  - http
   - logfile
-  - router_http
-  - router_metrics
-  - router_static
-  - router_uwsgi
-  - signal
   - syslog
-  - ugreen
